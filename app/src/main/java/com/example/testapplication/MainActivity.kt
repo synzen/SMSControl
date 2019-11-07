@@ -80,8 +80,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        var btn = findViewById<Button>(R.id.button3)
-        var filter = IntentFilter()
+        val btn = findViewById<Button>(R.id.button3)
+        val filter = IntentFilter()
         filter.addAction(SMS_FETCHED_ACTION)
         filter.addAction(SMS_FETCHING_UPDATE_ACTION)
         registerReceiver(broadcastReceiver, filter)
@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
                 startActivityForResult(setSmsAppIntent, CHANGE_SMS_DEFAULT_RESULT)
             } else {
                 val roleManager = getSystemService(RoleManager::class.java)
-                if (!roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
+                if (roleManager != null && !roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
 
                     startActivityForResult(
                         roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS),
@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
         return Telephony.Sms.getDefaultSmsPackage(this)
     }
 
-    fun sendMessage(view: View) {
+    fun sendMessage(@Suppress("UNUSED_PARAMETER")view: View) {
         // Do something in response to button
         Log.d("TAG", "going now")
         if (FETCHING_SMS) {
@@ -143,7 +143,7 @@ class MainActivity : AppCompatActivity() {
 //        startActivity(intent)
     }
 
-    fun cursorTest(view: View) {
+    fun cursorTest(@Suppress("UNUSED_PARAMETER")view: View) {
         val cursor = contentResolver.query(Telephony.Mms.CONTENT_URI, null, null, null, null)
         if (cursor == null || !cursor.moveToFirst()) {
             Log.d("TAG", "null cursor or no data")
@@ -158,14 +158,15 @@ class MainActivity : AppCompatActivity() {
             }
             Log.d("TAG", "${i++}/$total")
         } while (cursor.moveToNext())
+        cursor.close()
     }
 
-    fun deleteMessages(view: View) {
+    fun deleteMessages(@Suppress("UNUSED_PARAMETER")view: View) {
         contentResolver.delete(Telephony.Sms.CONTENT_URI, null, null)
 //        contentResolver.delete(Telephony.Sms.Conversations.CONTENT_URI, null, null)
     }
 
-    fun selectDirectory(view: View) {
+    fun selectDirectory(@Suppress("UNUSED_PARAMETER")view: View) {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
         startActivityForResult(intent, READ_DIR_REQUEST_CODE)
     }
@@ -183,14 +184,14 @@ class MainActivity : AppCompatActivity() {
         } else if (requestCode == READ_DIR_REQUEST_CODE) {
             data?.data?.also { uri ->
                 Log.i("TAG", "uri: $uri")
-                var uriDisplay = findViewById<TextView>(R.id.selectedUri)
+                val uriDisplay = findViewById<TextView>(R.id.selectedUri)
                 uriDisplay.text = uri.path
                 pathToWriteTo = uri
             }
         }
     }
 
-    fun beginWrite(view: View) {
+    fun beginWrite(@Suppress("UNUSED_PARAMETER")view: View) {
         writeToFile(pathToWriteTo, FILE_SMS_BACKUP)
     }
 
@@ -221,7 +222,7 @@ class MainActivity : AppCompatActivity() {
 //        try {
 //            var osw = OutputStreamWriter(openFileOutput())
 //        }
-        var rw = Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
+        val rw = Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
         if (rw) {
             Log.d("TAG", "yes")
         } else {
@@ -233,7 +234,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        var folderDocument = fromTreeUri(this, path)
+        val folderDocument = fromTreeUri(this, path)
 //        var files = folderDocument?.listFiles()
 //        if (files != null) {
 //            for (file in files) {
@@ -254,18 +255,18 @@ class MainActivity : AppCompatActivity() {
             Log.d("TAG", "file already exists and was unable to be deleted")
             return
         }
-        var fileURI = folderDocument.createFile("application/json", fileName)?.uri
+        val fileURI = folderDocument.createFile("application/json", fileName)?.uri
         if (fileURI == null) {
             Log.d("TAG", "null file URI")
             return
         }
         Log.d("TAG", "file path is ${fileURI.path}")
-        var outputStream = contentResolver.openOutputStream(fileURI)
+        val outputStream = contentResolver.openOutputStream(fileURI)
         if (outputStream == null) {
             Log.d("TAG", "null output stream")
             return
         }
-        var jsonWriter = JsonWriter(OutputStreamWriter(outputStream))
+        val jsonWriter = JsonWriter(OutputStreamWriter(outputStream))
         val cursor = contentResolver.query(Telephony.Sms.CONTENT_URI, null, null, null, null)
         if (cursor == null || !cursor.moveToFirst()) {
             Log.d("tag", "null cursor")
@@ -294,7 +295,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun beginRead(view: View) {
+    fun beginRead(@Suppress("UNUSED_PARAMETER")view: View) {
         readFile(pathToWriteTo, FILE_SMS_BACKUP, Telephony.Sms.CONTENT_URI, SMS_TABLE_TYPES)
     }
 
@@ -326,7 +327,7 @@ class MainActivity : AppCompatActivity() {
             Log.d("TAG", "null input stream")
             return
         }
-        var rows: MutableList<ContentValues> = mutableListOf()
+        val rows: MutableList<ContentValues> = mutableListOf()
         JsonReader(InputStreamReader(inputStream)).run {
             beginArray()
             while (hasNext()) {
@@ -361,7 +362,7 @@ class MainActivity : AppCompatActivity() {
             endArray()
             close()
         }
-        var total = rows.count()
+        val total = rows.count()
         var i = 0
         for (row in rows) {
             Log.d("TAG", "Inserting ${i++}/$total")
