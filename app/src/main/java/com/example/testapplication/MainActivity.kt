@@ -41,7 +41,6 @@ val SMS_TABLE_TYPES = mapOf<String, Int>(
     Telephony.TextBasedSmsColumns.CREATOR to Cursor.FIELD_TYPE_STRING,
     Telephony.TextBasedSmsColumns.PERSON to Cursor.FIELD_TYPE_INTEGER,
     Telephony.TextBasedSmsColumns.SUBJECT to Cursor.FIELD_TYPE_STRING,
-    Telephony.TextBasedSmsColumns.SUBSCRIPTION_ID to Cursor.FIELD_TYPE_INTEGER,
     Telephony.TextBasedSmsColumns.SEEN to Cursor.FIELD_TYPE_INTEGER,
     Telephony.TextBasedSmsColumns.READ to Cursor.FIELD_TYPE_INTEGER,
     Telephony.TextBasedSmsColumns.TYPE to Cursor.FIELD_TYPE_INTEGER,
@@ -52,17 +51,14 @@ val SMS_TABLE_TYPES = mapOf<String, Int>(
     Telephony.TextBasedSmsColumns.LOCKED to Cursor.FIELD_TYPE_INTEGER
 )
 
-val CONVERSATION_TABLE_TYPES = mapOf<String, Int>(
-    "msg_count" to Cursor.FIELD_TYPE_INTEGER,
-    "thread_id" to Cursor.FIELD_TYPE_INTEGER,
-    "snippet" to Cursor.FIELD_TYPE_STRING
+val MMS_TABLE_TYPES = mapOf<String, Int>(
 )
 
 class MainActivity : AppCompatActivity() {
     private var pathToWriteTo = Uri.EMPTY
     private val broadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            var progressBar = findViewById<ProgressBar>(R.id.progressBar2)
+            val progressBar = findViewById<ProgressBar>(R.id.progressBar2)
             when (intent?.action) {
                 SMS_FETCHED_ACTION -> {
                     Log.d("TAG", "FETCHED ACTION COMPLETED")
@@ -72,7 +68,7 @@ class MainActivity : AppCompatActivity() {
 //                    var receieved = intent.getFloatExtra(SMS_FETCHING_UPDATE_ACTION, 1f)
 //                    Log.d("TAG", "Received ${receieved}")
                     Thread(Runnable {
-                        var progress = intent.getIntExtra(SMS_FETCHING_UPDATE_ACTION, 0)
+                        val progress = intent.getIntExtra(SMS_FETCHING_UPDATE_ACTION, 0)
                         Log.d("TAG", "got progress $progress")
                         progressBar.progress = progress
                     }).start()
@@ -195,7 +191,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun beginWrite(view: View) {
-        writeToFile(pathToWriteTo, FILE_SMS_BACKUP, Telephony.Sms.CONTENT_URI, SMS_TABLE_TYPES)
+        writeToFile(pathToWriteTo, FILE_SMS_BACKUP)
     }
 
     private fun recordRows(cursor: Cursor, jsonWriter: JsonWriter, typeReference: Map<String, Int>) {
@@ -221,7 +217,7 @@ class MainActivity : AppCompatActivity() {
         } while (cursor.moveToNext())
     }
 
-    private fun writeToFile(path: Uri, fileName: String, contentUri: Uri, dataTypes: Map<String, Int>) {
+    private fun writeToFile(path: Uri, fileName: String) {
 //        try {
 //            var osw = OutputStreamWriter(openFileOutput())
 //        }
@@ -270,17 +266,29 @@ class MainActivity : AppCompatActivity() {
             return
         }
         var jsonWriter = JsonWriter(OutputStreamWriter(outputStream))
-        val cursor = contentResolver.query(contentUri, null, null, null, null)
+        val cursor = contentResolver.query(Telephony.Sms.CONTENT_URI, null, null, null, null)
         if (cursor == null || !cursor.moveToFirst()) {
             Log.d("tag", "null cursor")
             return
         }
+        val mmsCursor = contentResolver.query(Telephony.Mms.CONTENT_URI, null, null, null, null)
+        if (mmsCursor == null || !mmsCursor.moveToFirst()) {
+            Log.d("TAG", "null mms cursor")
+            return
+        }
         Log.d("TAG", "write success")
         jsonWriter.run {
+            beginObject()
+            name("sms")
             beginArray()
-            recordRows(cursor, this, dataTypes)
+            recordRows(cursor, this, SMS_TABLE_TYPES)
             cursor.close()
             endArray()
+            name("mms")
+            beginArray()
+            recordRows(mmsCursor, this, MMS_TABLE_TYPES)
+            endArray()
+            endObject()
             flush()
             close()
         }
